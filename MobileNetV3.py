@@ -69,7 +69,7 @@ class SqEx(nn.Module):
         self.linear1 = nn.Linear(n_features, n_features // reduction, bias=True)
         self.nonlin1 = nn.ReLU(inplace=True)
         self.linear2 = nn.Linear(n_features // reduction, n_features, bias=True)
-        self.nonlin2 = HardSigmoid()
+        self.nonlin2 = HardSigmoid(inplace=True)
 
     def forward(self, x):
         y = F.avg_pool2d(x, kernel_size=x.size()[2:4])
@@ -131,7 +131,7 @@ class LinearBottleneck(nn.Module):
         out = self.act3(out)
 
         if self.stride == 1 and self.inplanes == self.outplanes:  # TODO: or add 1x1?
-            out += residual
+            out = out+residual #No inplace if there is in-place activation before
 
         return out
 
@@ -285,24 +285,6 @@ class MobileNetV3(nn.Module):
             self.last_exp1 = _make_divisible(960 * self.scale, 8)
             self.last_block = LastBlockLarge(self.bottlenecks_setting[-1][2], num_classes, self.last_exp1,
                                              self.last_exp2)
-
-    def _make_stage(self, inplanes, outplanes, n, stride, t, stage):
-        modules = OrderedDict()
-        stage_name = "LinearBottleneck{}".format(stage)
-
-        # First module is the only one utilizing stride
-        first_module = LinearBottleneck(inplanes=inplanes, outplanes=outplanes, stride=stride, t=t,
-                                        activation=self.activation_type)
-        modules[stage_name + "_0"] = first_module
-
-        # add more LinearBottleneck depending on number of repeats
-        for i in range(n - 1):
-            name = stage_name + "_{}".format(i + 1)
-            module = LinearBottleneck(inplanes=outplanes, outplanes=outplanes, stride=1, t=6,
-                                      activation=self.activation_type)
-            modules[name] = module
-
-        return nn.Sequential(modules)
 
     def _make_bottlenecks(self):
         modules = OrderedDict()

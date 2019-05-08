@@ -51,7 +51,7 @@ def get_args():
     # Optimization options
     parser.add_argument('--sched', dest='sched', type=str, default='multistep')
     parser.add_argument('--epochs', type=int, default=500, help='Number of epochs to train.')
-    parser.add_argument('-b', '--batch-size', default=64, type=int, metavar='N', help='mini-batch size (default: 64)')
+    parser.add_argument('-b', '--batch-size', default=32, type=int, metavar='N', help='mini-batch size (default: 32)')
     parser.add_argument('--learning_rate', '-lr', type=float, default=0.1, help='The learning rate.')
     parser.add_argument('--momentum', '-m', type=float, default=0.9, help='Momentum.')
     parser.add_argument('--decay', '-d', type=float, default=1e-4, help='Weight decay (L2 penalty).')
@@ -86,12 +86,14 @@ def get_args():
                         help='Number of batches between log messages')
     parser.add_argument('--seed', type=int, default=None, metavar='S', help='random seed (default: random)')
     parser.add_argument('--determenistic', dest='deter', action='store_true', help='use determenistic environment')
+    parser.add_argument('--grad-debug', dest='grad_debug', action='store_true', help='use anomaly detection')
 
     # Architecture
     parser.add_argument('--scaling', type=float, default=1, metavar='SC', help='Scaling of MobileNetV3 (default x1).')
     parser.add_argument('--dp', type=float, default=0.1, metavar='DP', help='Dropping probability of DropBlock')
     parser.add_argument('--input-size', type=int, default=224, metavar='I', help='Input size of MobileNetV3.')
     parser.add_argument('--small', dest='small', action='store_true', help='use small modification')
+    parser.add_argument('--sync-bn', dest='sync_bn', action='store_true', help='use synchronized BN')
 
     args = parser.parse_args()
 
@@ -122,6 +124,8 @@ def get_args():
             torch.backends.cudnn.benchmark = False
         else:
             cudnn.benchmark = True
+        if args.grad_debug:
+            torch.autograd.set_detect_anomaly(True)
         args.gpus = [args.local_rank]
         args.device = 'cuda:' + str(args.gpus[0])
         torch.cuda.set_device(args.gpus[0])
@@ -183,6 +187,8 @@ def main():
         args.device_ids = [args.local_rank]
         dist.init_process_group(backend=args.dist_backend, init_method=args.dist_init, world_size=args.world_size,
                                 rank=args.local_rank)
+        if args.sync_bn:
+            model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank],
                                                           output_device=args.local_rank)
         print('Node #{}'.format(args.local_rank))

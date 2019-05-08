@@ -147,8 +147,10 @@ class DropBlockScheduled(nn.Module):
     def __init__(self, dropblock, start_value, stop_value, nr_steps, start_step=0):
         super(DropBlockScheduled, self).__init__()
         self.dropblock = dropblock
-        self.register_buffer('i', torch.ones(1, dtype=torch.int64) + start_step)
-        self.drop_values = np.linspace(start=start_value, stop=stop_value, num=nr_steps)
+        self.register_buffer('i', torch.zeros(1, dtype=torch.int64))
+        self.start_step = start_step
+        self.nr_steps = nr_steps
+        self.step_size = (stop_value-start_value)/nr_steps
 
     def forward(self, x):
         if self.training:
@@ -157,7 +159,7 @@ class DropBlockScheduled(nn.Module):
 
     def step(self):
         idx = self.i.item()
-        if idx < len(self.drop_values):
-            self.dropblock.drop_prob = self.drop_values[idx]
+        if idx > self.start_step and idx<self.start_step+self.nr_steps:
+            self.dropblock.drop_prob += self.step_size
 
         self.i += 1
