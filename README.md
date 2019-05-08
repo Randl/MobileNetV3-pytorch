@@ -23,13 +23,14 @@ python imagenet.py --dataroot "/path/to/imagenet/" --resume "/path/to/checkpoint
 ```
 ## Results
 
+TODO
 
 |Classification Checkpoint| MACs (M)   | Parameters (M)| Top-1 Accuracy| Top-5 Accuracy|  Claimed top-1|  Claimed top-5|
 |-------------------------|------------|---------------|---------------|---------------|---------------|---------------|
 
 You can test it with
 ```bash
-python imagenet.py --dataroot "/path/to/imagenet/" --resume "results/shufflenet_v2_0.5/model_best.pth.tar" -e
+python imagenet.py --dataroot "/path/to/imagenet/" --resume "" -e
 ```
 
 ## Other implementations

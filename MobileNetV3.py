@@ -252,7 +252,7 @@ class MobileNetV3(nn.Module):
             # in, exp, out, s, k,         dp,    se,      act
             [16, 64, 24, 2, 3, 0, True, nn.ReLU],  # -> 56x56 #TODO
             [24, 72, 24, 2, 3, 0, False, nn.ReLU],  # -> 28x28
-            [24, 88, 24, 1, 3, 0, False, nn.ReLU],  # -> 28x28
+            [24, 88, 40, 1, 3, 0, False, nn.ReLU],  # -> 28x28
             [40, 96, 40, 2, 5, 0, True, HardSwish],  # -> 14x14 #TODO
             [40, 240, 40, 1, 5, drop_prob, True, HardSwish],  # -> 14x14
             [40, 240, 40, 1, 5, drop_prob, True, HardSwish],  # -> 14x14
@@ -269,7 +269,7 @@ class MobileNetV3(nn.Module):
             l[1] = _make_divisible(l[1] * self.scale, 8)
             l[2] = _make_divisible(l[2] * self.scale, 8)
 
-        self.conv1 = nn.Conv2d(in_channels, self.bottlenecks_setting[0][0], kernel_size=3, bias=False, stride=1,
+        self.conv1 = nn.Conv2d(in_channels, self.bottlenecks_setting[0][0], kernel_size=3, bias=False, stride=2,
                                padding=1)
         self.bn1 = nn.BatchNorm2d(self.bottlenecks_setting[0][0])
         self.act1 = HardSwish(inplace=True)

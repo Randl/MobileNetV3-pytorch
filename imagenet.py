@@ -51,7 +51,7 @@ def get_args():
     # Optimization options
     parser.add_argument('--sched', dest='sched', type=str, default='multistep')
     parser.add_argument('--epochs', type=int, default=500, help='Number of epochs to train.')
-    parser.add_argument('-b', '--batch-size', default=32, type=int, metavar='N', help='mini-batch size (default: 32)')
+    parser.add_argument('-b', '--batch-size', default=128, type=int, metavar='N', help='mini-batch size (default: 128)')
     parser.add_argument('--learning_rate', '-lr', type=float, default=0.1, help='The learning rate.')
     parser.add_argument('--momentum', '-m', type=float, default=0.9, help='Momentum.')
     parser.add_argument('--decay', '-d', type=float, default=1e-4, help='Weight decay (L2 penalty).')
@@ -166,7 +166,7 @@ def main():
     model = MobileNetV3(num_classes=args.num_classes, scale=args.scaling, in_channels=3, drop_prob=args.dp,
                         num_steps=args.num_batches, start_step=args.start_step, small=args.small)
     num_parameters = sum([l.nelement() for l in model.parameters()])
-    flops = flops_benchmark.count_flops(MobileNetV3, 1, device, dtype, args.input_size, 3, num_classes=args.num_classes,
+    flops = flops_benchmark.count_flops(MobileNetV3, 2, device, dtype, args.input_size, 3, num_classes=args.num_classes,
                                         scale=args.scaling, drop_prob=args.dp, num_steps=args.num_batches,
                                         start_step=args.start_step, small=args.small)
     if not args.child:
