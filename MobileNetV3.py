@@ -185,7 +185,6 @@ class LastBlockSmall(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d(1)
 
         self.conv2 = nn.Conv2d(expplanes1, expplanes2, kernel_size=1, stride=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(expplanes2)
         self.act2 = HardSwish(inplace=True)
 
         self.dropout = nn.Dropout(p=0.2, inplace=True)
@@ -205,7 +204,6 @@ class LastBlockSmall(nn.Module):
         out = self.avgpool(out)
 
         out = self.conv2(out)
-        out = self.bn2(out)
         out = self.act2(out)
 
         # flatten for input to fully-connected layer
@@ -250,10 +248,10 @@ class MobileNetV3(nn.Module):
         ]
         self.bottlenecks_setting_small = [
             # in, exp, out, s, k,         dp,    se,      act
-            [16, 64, 24, 2, 3, 0, True, nn.ReLU],  # -> 56x56 #TODO
-            [24, 72, 24, 2, 3, 0, False, nn.ReLU],  # -> 28x28
-            [24, 88, 40, 1, 3, 0, False, nn.ReLU],  # -> 28x28
-            [40, 96, 40, 2, 5, 0, True, HardSwish],  # -> 14x14 #TODO
+            [16, 64, 16, 2, 3, 0, True, nn.ReLU],  # -> 56x56
+            [16, 72, 24, 2, 3, 0, False, nn.ReLU],  # -> 28x28
+            [24, 88, 24, 1, 3, 0, False, nn.ReLU],  # -> 28x28
+            [24, 96, 40, 2, 5, 0, True, HardSwish],  # -> 14x14
             [40, 240, 40, 1, 5, drop_prob, True, HardSwish],  # -> 14x14
             [40, 240, 40, 1, 5, drop_prob, True, HardSwish],  # -> 14x14
             [40, 120, 48, 1, 5, drop_prob, True, HardSwish],  # -> 14x14

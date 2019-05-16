@@ -54,7 +54,7 @@ class DropBlock2D(nn.Module):
             out = x * block_mask[:, None, :, :]
 
             # scale output
-            out = out * (block_mask.numel() / keeped)
+            out = out * (block_mask.numel() / keeped).to(out)
             return out
 
     def _compute_block_mask(self, mask):
