@@ -9,8 +9,6 @@ import torch.optim
 import torch.utils.data
 from tqdm import tqdm, trange
 
-from cosine_with_warmup import CosineLR
-
 matplotlib.use('Agg')
 
 from matplotlib import pyplot as plt

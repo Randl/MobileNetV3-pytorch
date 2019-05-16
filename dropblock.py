@@ -1,6 +1,5 @@
 # https://github.com/miguelvr/dropblock/blob/master/dropblock/dropblock.py
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -67,7 +66,7 @@ class DropBlock2D(nn.Module):
         if self.block_size % 2 == 0:
             block_mask = block_mask[:, :, :-1, :-1]
 
-        keeped = block_mask.numel()-block_mask.sum().to(torch.float32) # prevent overflow in float16
+        keeped = block_mask.numel() - block_mask.sum().to(torch.float32)  # prevent overflow in float16
         block_mask = 1 - block_mask.squeeze(1)
 
         return block_mask, keeped
@@ -150,7 +149,7 @@ class DropBlockScheduled(nn.Module):
         self.register_buffer('i', torch.zeros(1, dtype=torch.int64))
         self.start_step = start_step
         self.nr_steps = nr_steps
-        self.step_size = (stop_value-start_value)/nr_steps
+        self.step_size = (stop_value - start_value) / nr_steps
 
     def forward(self, x):
         if self.training:
@@ -159,7 +158,7 @@ class DropBlockScheduled(nn.Module):
 
     def step(self):
         idx = self.i.item()
-        if idx > self.start_step and idx<self.start_step+self.nr_steps:
+        if idx > self.start_step and idx < self.start_step + self.nr_steps:
             self.dropblock.drop_prob += self.step_size
 
         self.i += 1

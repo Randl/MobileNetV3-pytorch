@@ -55,7 +55,8 @@ class ModuleFloatShadow(torch.nn.Module):
 
 
 class OptimizerWrapper(object):
-    def __init__(self, model, optimizer_class, optimizer_params,  scheduler_class, scheduler_params, optimizer_state_dict=None, use_shadow_weights=False):
+    def __init__(self, model, optimizer_class, optimizer_params, scheduler_class, scheduler_params,
+                 optimizer_state_dict=None, use_shadow_weights=False):
         if use_shadow_weights:
             model = ModuleFloatShadow(model)
             self._original_parameters = list(model.original_parameters())

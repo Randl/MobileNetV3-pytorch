@@ -131,7 +131,7 @@ class LinearBottleneck(nn.Module):
         out = self.act3(out)
 
         if self.stride == 1 and self.inplanes == self.outplanes:  # TODO: or add 1x1?
-            out = out+residual #No inplace if there is in-place activation before
+            out = out + residual  # No inplace if there is in-place activation before
 
         return out
 

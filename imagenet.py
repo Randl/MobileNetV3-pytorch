@@ -28,7 +28,7 @@ from utils.optimizer_wrapper import OptimizerWrapper
 # https://arxiv.org/abs/1905.02244
 # input_size, scale, large/small
 # TODO
-claimed_acc_top1 = {'large':{224: {0.75: 0.733, 1.: 0.752}}, 'small': {224: {0.75: 0.654, 1.: 0.674}}}
+claimed_acc_top1 = {'large': {224: {0.75: 0.733, 1.: 0.752}}, 'small': {224: {0.75: 0.654, 1.: 0.674}}}
 
 
 def get_args():
@@ -103,7 +103,7 @@ def get_args():
     if not args.distributed:
         args.local_rank = 0
         args.world_size = 1
-    if args.local_rank >=  args.world_size:
+    if args.local_rank >= args.world_size:
         raise ValueError('World size inconsistent with local rank!')
     if args.seed is None:
         args.seed = random.randint(1, 10000)
@@ -147,8 +147,8 @@ def get_args():
         raise ValueError('Wrong type!')  # TODO int8
 
     # Adjust lr for batch size
-    args.learning_rate *= args.batch_size/128. * args.world_size
-    args.max_lr *= args.batch_size/128. * args.world_size
+    args.learning_rate *= args.batch_size / 128. * args.world_size
+    args.max_lr *= args.batch_size / 128. * args.world_size
 
     if not args.child:
         print("Random Seed: ", args.seed)
