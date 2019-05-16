@@ -26,10 +26,9 @@ from utils.logger import CsvLogger
 from utils.optimizer_wrapper import OptimizerWrapper
 
 # https://arxiv.org/abs/1905.02244
-# input_size, scale
+# input_size, scale, large/small
 # TODO
-claimed_acc_top1 = {224: {0.35: 0.624, 0.5: 0.678, 0.75: 0.715, 1.: 0.74, 1.3: 0.755, 1.4: 0.759}, 192: {1: 0.724},
-                    160: {1: 0.707}, 128: {1: 0.673}, 96: {1: 0.623}}
+claimed_acc_top1 = {'large':{224: {0.75: 0.733, 1.: 0.752}}, 'small': {224: {0.75: 0.654, 1.: 0.674}}}
 
 
 def get_args():
@@ -68,7 +67,7 @@ def get_args():
     # CLR
     parser.add_argument('--min-lr', type=float, default=1e-5, help='Minimal LR for CLR.')
     parser.add_argument('--max-lr', type=float, default=1, help='Maximal LR for CLR.')
-    parser.add_argument('--epochs-per-step', type=int, default=20,
+    parser.add_argument('--epochs-per-step', type=int, default=25,
                         help='Number of epochs per step in CLR, recommended to be between 2 and 10.')
     parser.add_argument('--mode', default='triangular2', help='CLR mode. One of {triangular, triangular2, exp_range}')
     parser.add_argument('--find-clr', dest='find_clr', action='store_true',
@@ -102,6 +101,8 @@ def get_args():
     if not args.distributed:
         args.local_rank = 0
         args.world_size = 1
+    if args.local_rank >=  args.world_size:
+        raise ValueError('World size inconsistent with local rank!')
     if args.seed is None:
         args.seed = random.randint(1, 10000)
     random.seed(args.seed)
@@ -152,6 +153,7 @@ def get_args():
 def is_bn(module):
     return isinstance(module, torch.nn.BatchNorm1d) or \
            isinstance(module, torch.nn.BatchNorm2d) or \
+           isinstance(module, torch.nn.BatchNorm3d) or \
            isinstance(module, torch.nn.BatchNorm3d)
 
 
@@ -247,11 +249,13 @@ def main():
 
     claimed_acc1 = None
     claimed_acc5 = None
-    if args.input_size in claimed_acc_top1:
-        if args.scaling in claimed_acc_top1[args.input_size]:
-            claimed_acc1 = claimed_acc_top1[args.input_size][args.scaling]
-            if not args.child:
-                csv_logger.write_text('Claimed accuracy is {:.2f}% top-1'.format(claimed_acc1 * 100.))
+    ntype = 'small' if args.small else 'large'
+    if ntype in claimed_acc_top1:
+        if args.input_size in claimed_acc_top1[ntype]:
+            if args.scaling in claimed_acc_top1[ntype][args.input_size]:
+                claimed_acc1 = claimed_acc_top1[ntype][args.input_size][args.scaling]
+                if not args.child:
+                    csv_logger.write_text('Claimed accuracy is {:.2f}% top-1'.format(claimed_acc1 * 100.))
     train_network(args.start_epoch, args.epochs, optim, model, train_loader, val_loader, criterion, mixup,
                   device, dtype, args.batch_size, args.log_interval, csv_logger, args.save_path, claimed_acc1,
                   claimed_acc5, best_test, args.local_rank, args.child)
@@ -290,7 +294,7 @@ def init_optimizer_and_mixup(args, train_loader, model, optim_state_dict=None):
     if args.sched == 'clr':
         scheduler_class = CyclicLR
         scheduler_params = {"base_lr": args.min_lr, "max_lr": args.max_lr,
-                            "step_size": args.epochs_per_step * len(train_loader), "mode": args.mode,
+                            "step_size_up": args.epochs_per_step * len(train_loader), "mode": args.mode,
                             "last_epoch": args.start_step - 1}
     elif args.sched == 'multistep':
         scheduler_class = MultiStepLR

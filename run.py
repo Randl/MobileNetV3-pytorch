@@ -107,13 +107,13 @@ def find_bounds_clr(model, loader, optimizer, criterion, device, dtype, min_lr=8
                     mode='triangular', save_path='.'):
     model.train()
     correct1, correct5 = 0, 0
-    scheduler = CyclicLR(optimizer, base_lr=min_lr, max_lr=max_lr, step_size=step_size, mode=mode)
+    scheduler = CyclicLR(optimizer, base_lr=min_lr, max_lr=max_lr, step_size_up=step_size, mode=mode)
     epoch_count = step_size // len(loader)  # Assuming step_size is multiple of batch per epoch
     accuracy = []
     for _ in trange(epoch_count):
         for batch_idx, (data, target) in enumerate(tqdm(loader)):
             if scheduler is not None:
-                scheduler.batch_step()
+                scheduler.step()
             data, target = data.to(device=device, dtype=dtype), target.to(device=device)
 
             optimizer.zero_grad()
@@ -129,6 +129,6 @@ def find_bounds_clr(model, loader, optimizer, criterion, device, dtype, min_lr=8
     lrs = np.linspace(min_lr, max_lr, step_size)
     plt.plot(lrs, accuracy)
     plt.show()
-    plt.savefig(os.path.join(save_path, 'find_bounds_clr.png'))
+    plt.savefig(os.path.join(save_path, 'find_bounds_clr.pdf'))
     np.save(os.path.join(save_path, 'acc.npy'), accuracy)
     return
