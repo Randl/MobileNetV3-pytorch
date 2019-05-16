@@ -3,6 +3,9 @@
 from copy import deepcopy
 
 import torch
+from torch.optim.lr_scheduler import CyclicLR
+
+from cosine_with_warmup import CosineLR
 
 
 def copy_params(param_target, param_src):
@@ -101,7 +104,16 @@ class OptimizerWrapper(object):
         if self.use_shadow_weights:
             copy_params(self._original_parameters, self.parameters)
 
-    def scheduler_step(self, epoch=None): # TODO (batch/epoch)
+    def scheduler_step(self, epoch=None):
         """Performs a single lr update step.
         """
         self.scheduler.step()
+
+    def batch_step(self, closure=None):
+        if isinstance(self.scheduler, CyclicLR) or isinstance(self.scheduler, CosineLR):
+            self.scheduler_step()
+        self.optimizer_step(closure)
+
+    def epoch_step(self):
+        if not isinstance(self.scheduler, CyclicLR) and not isinstance(self.scheduler, CosineLR):
+            self.scheduler_step()

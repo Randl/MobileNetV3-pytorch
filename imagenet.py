@@ -51,7 +51,8 @@ def get_args():
     parser.add_argument('--sched', dest='sched', type=str, default='multistep')
     parser.add_argument('--epochs', type=int, default=500, help='Number of epochs to train.')
     parser.add_argument('-b', '--batch-size', default=128, type=int, metavar='N', help='mini-batch size (default: 128)')
-    parser.add_argument('--learning_rate', '-lr', type=float, default=0.1, help='The learning rate.')
+    parser.add_argument('--learning_rate', '-lr', type=float, default=0.02, help='The learning rate for batch of 128 '
+                                                                                 '(scaled for bigger/smaller batches).')
     parser.add_argument('--momentum', '-m', type=float, default=0.9, help='Momentum.')
     parser.add_argument('--decay', '-d', type=float, default=1e-4, help='Weight decay (L2 penalty).')
     parser.add_argument('--gamma', type=float, default=0.1, help='LR is multiplied by gamma at scheduled epochs.')
@@ -66,7 +67,8 @@ def get_args():
 
     # CLR
     parser.add_argument('--min-lr', type=float, default=1e-5, help='Minimal LR for CLR.')
-    parser.add_argument('--max-lr', type=float, default=1, help='Maximal LR for CLR.')
+    parser.add_argument('--max-lr', type=float, default=0.2, help='Maximal LR for CLR for batch of 128 '
+                                                                  '(scaled for bigger/smaller batches).')
     parser.add_argument('--epochs-per-step', type=int, default=25,
                         help='Number of epochs per step in CLR, recommended to be between 2 and 10.')
     parser.add_argument('--mode', default='triangular2', help='CLR mode. One of {triangular, triangular2, exp_range}')
@@ -143,6 +145,10 @@ def get_args():
         args.dtype = torch.float16
     else:
         raise ValueError('Wrong type!')  # TODO int8
+
+    # Adjust lr for batch size
+    args.learning_rate *= args.batch_size/128. * args.world_size
+    args.max_lr *= args.batch_size/128. * args.world_size
 
     if not args.child:
         print("Random Seed: ", args.seed)
@@ -266,11 +272,11 @@ def train_network(start_epoch, epochs, optim, model, train_loader, val_loader, c
                   child):
     my_range = range if child else trange
     for epoch in my_range(start_epoch, epochs + 1):
-        if not isinstance(optim.scheduler, CyclicLR) and not isinstance(optim.scheduler, CosineLR):
-            optim.scheduler_step()
         train_loss, train_accuracy1, train_accuracy5, = train(model, train_loader, mixup, epoch, optim, criterion,
                                                               device, dtype, batch_size, log_interval, child)
         test_loss, test_accuracy1, test_accuracy5 = test(model, val_loader, criterion, device, dtype, child)
+        optim.epoch_step()
+
         csv_logger.write({'epoch': epoch + 1, 'val_error1': 1 - test_accuracy1, 'val_error5': 1 - test_accuracy5,
                           'val_loss': test_loss, 'train_error1': 1 - train_accuracy1,
                           'train_error5': 1 - train_accuracy5, 'train_loss': train_loss})

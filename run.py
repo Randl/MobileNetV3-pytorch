@@ -24,8 +24,6 @@ def train(model, loader, mixup, epoch, optim, criterion, device, dtype, batch_si
 
     enum_load = enumerate(loader) if child else enumerate(tqdm(loader))
     for batch_idx, (data, t) in enum_load:
-        if isinstance(optim.scheduler, CyclicLR) or isinstance(optim.scheduler, CosineLR):
-            optim.scheduler_step()
         data, t = data.to(device=device, dtype=dtype), t.to(device=device)
         data, target = mixup(data, t)
 
@@ -34,7 +32,7 @@ def train(model, loader, mixup, epoch, optim, criterion, device, dtype, batch_si
 
         loss = criterion(output, target)
         loss.backward()
-        optim.optimizer_step()
+        optim.batch_step()
 
         corr = correct(output, t, topk=(1, 5))
         correct1 += corr[0]

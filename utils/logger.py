@@ -10,7 +10,7 @@ import numpy as np
 
 plt.switch_backend('agg')
 
-
+# TODO: add/replace with tensorboard https://pytorch.org/docs/stable/tensorboard.html
 class CsvLogger:
     def __init__(self, filepath='./', filename='results{}.csv', data=None, local_rank=0):
         self.local_rank = local_rank
