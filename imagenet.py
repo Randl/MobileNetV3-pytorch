@@ -193,7 +193,7 @@ def main():
     if args.dtype == torch.float16:
         for module in model.modules():  # FP batchnorm
             if is_bn(module):
-                module.to(dtype=torch.float32)
+                module.to(dtype=torch.float32)  # github.com/pytorch/pytorch/issues/20634
 
     if args.distributed:
         args.device_ids = [args.local_rank]
