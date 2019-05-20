@@ -90,6 +90,7 @@ class LinearBottleneck(nn.Module):
         self.db1 = DropBlockScheduled(DropBlock2D(drop_prob=drop_prob, block_size=7), start_value=0.,
                                       stop_value=drop_prob, nr_steps=num_steps, start_step=start_step)
         self.act1 = activation(**act_params)  # first does have act according to MobileNetV2
+        # TODO: compare
 
         self.conv2 = nn.Conv2d(expplanes, expplanes, kernel_size=k, stride=stride, padding=k // 2, bias=False,
                                groups=expplanes)

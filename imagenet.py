@@ -223,7 +223,7 @@ def main():
         if os.path.isfile(args.resume):
             print("=> loading checkpoint '{}'".format(args.resume))
             checkpoint = torch.load(args.resume, map_location=device)
-            args.start_epoch = checkpoint['epoch'] - 1
+            args.start_epoch = checkpoint['epoch']
             args.start_step = len(train_loader) * args.start_epoch
             optim, mixup = init_optimizer_and_mixup(args, train_loader, model, checkpoint['optimizer'])
             best_test = checkpoint['best_prec1']
@@ -234,7 +234,7 @@ def main():
             csv_path = os.path.join(args.resume, 'results{}.csv'.format(args.local_rank))
             print("=> loading checkpoint '{}'".format(checkpoint_path))
             checkpoint = torch.load(checkpoint_path, map_location=device)
-            args.start_epoch = checkpoint['epoch'] - 1
+            args.start_epoch = checkpoint['epoch']
             args.start_step = len(train_loader) * args.start_epoch
             optim, mixup = init_optimizer_and_mixup(args, train_loader, model, checkpoint['optimizer'])
             best_test = checkpoint['best_prec1']
@@ -287,6 +287,7 @@ def train_network(start_epoch, epochs, optim, model, train_loader, val_loader, c
         save_checkpoint({'epoch': epoch + 1, 'state_dict': model.state_dict(), 'best_prec1': best_test,
                          'optimizer': optim.state_dict()}, test_accuracy1 > best_test, filepath=save_path,
                         local_rank=local_rank)
+        # TODO: save on the end of the cycle
 
         csv_logger.plot_progress(claimed_acc1=claimed_acc1, claimed_acc5=claimed_acc5)
 

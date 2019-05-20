@@ -44,6 +44,7 @@ def get_transform(augment=True, input_size=224):
 def get_loaders(dataroot, val_batch_size, train_batch_size, input_size, workers, num_nodes, local_rank):
     # TODO: pin-memory currently broken for distributed
     pin_memory = False
+    # TODO: datasets.ImageNet
     val_data = datasets.ImageFolder(root=os.path.join(dataroot, 'val'), transform=get_transform(False, input_size))
     val_sampler = DistributedSampler(val_data, num_nodes, local_rank)
     val_loader = torch.utils.data.DataLoader(val_data, batch_size=val_batch_size, sampler=val_sampler,
