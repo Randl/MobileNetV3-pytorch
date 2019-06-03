@@ -25,16 +25,17 @@ python imagenet.py --dataroot "/path/to/imagenet/" --resume "/path/to/checkpoint
 
 TODO
 
-|Classification Checkpoint| MACs (M)   | Parameters (M)| Top-1 Accuracy| Top-5 Accuracy|  Claimed top-1|  Claimed top-5|
-|-------------------------|------------|---------------|---------------|---------------|---------------|---------------|
-
+|Classification Checkpoint | MACs (M)   | Parameters (M)| Top-1 Accuracy| Top-5 Accuracy|  Claimed top-1|  Claimed top-5|  Inference time|
+|--------------------------|------------|---------------|---------------|---------------|---------------|---------------|----------------|
+|MobileNetV3 Large x1.0 224|214.70      |5.145          |          70.88|          89.53|           75.2|              -|               -|
+|  [mobilenet_v2_1.0_224](https://github.com/Randl/MobileNetV2-pytorch/)|300         |3.47           |          72.10|          90.48|           71.8|           91.0|               -|
 You can test it with
 ```bash
 python imagenet.py --dataroot "/path/to/imagenet/" --resume "" -e
 ```
 
 ## Other implementations
-- https://github.com/d-li14/mobilenetv3.pytorch
+- https://github.com/d-li14/mobilenetv3.pytorch : 73.152% top-1, but with more FLOPs
 ## Code used
 - [DropBlock implementation](https://github.com/miguelvr/dropblock/blob/master/dropblock/dropblock.py) by [miguelvr](https://github.com/miguelvr)
 - [FLOPS calculator](https://github.com/warmspringwinds/pytorch-segmentation-detection/blob/master/pytorch_segmentation_detection/utils/flops_benchmark.py) by [warmspringwinds](https://github.com/warmspringwinds)

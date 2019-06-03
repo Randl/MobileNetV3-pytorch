@@ -41,7 +41,7 @@ def get_args():
                         help='Path to ImageNet train and val folders, preprocessed as described in '
                              'https://github.com/facebook/fb.resnet.torch/blob/master/INSTALL.md#download-the-imagenet-dataset')
     parser.add_argument('--device', default='cuda', help='device assignment ("cpu" or "cuda")')
-    parser.add_argument('-j', '--workers', default=6, type=int, metavar='N',
+    parser.add_argument('-j', '--workers', default=7, type=int, metavar='N',
                         help='Number of data loading workers (default: 6)')
     parser.add_argument('--type', default='float32', help='Type of tensor: float32, float16, float64. Default: float32')
 
@@ -53,27 +53,28 @@ def get_args():
 
     # Optimization options
     parser.add_argument('--sched', dest='sched', type=str, default='multistep')
-    parser.add_argument('--epochs', type=int, default=500, help='Number of epochs to train.')
+    parser.add_argument('--epochs', type=int, default=155, help='Number of epochs to train.')
     parser.add_argument('-b', '--batch-size', default=128, type=int, metavar='N', help='mini-batch size (default: 128)')
     parser.add_argument('--learning_rate', '-lr', type=float, default=0.02, help='The learning rate for batch of 128 '
                                                                                  '(scaled for bigger/smaller batches).')
     parser.add_argument('--momentum', '-m', type=float, default=0.9, help='Momentum.')
-    parser.add_argument('--decay', '-d', type=float, default=1e-4, help='Weight decay (L2 penalty).')
+    parser.add_argument('--decay', '-d', type=float, default=5e-7, help='Weight decay for batch of 128 '
+                                                                        '(scaled for bigger/smaller batches).')
     parser.add_argument('--gamma', type=float, default=0.1, help='LR is multiplied by gamma at scheduled epochs.')
     parser.add_argument('--schedule', type=int, nargs='+', default=[200, 300],
                         help='Decrease learning rate at these epochs.')
     parser.add_argument('--step', type=int, default=40, help='Decrease learning rate each time.')
     parser.add_argument('--warmup', default=0, type=int, metavar='N', help='Warmup length')
     parser.add_argument('--mixup', type=float, default=0.2, help='Mixup gamma value.')
-    parser.add_argument('--mixup-warmup', type=int, default=500, help='Mixup time to be turned of in the beginning.')
+    parser.add_argument('--mixup-warmup', type=int, default=155, help='Mixup time to be turned of in the beginning.')
     parser.add_argument('--smooth-eps', type=float, default=0.1, help='Label smoothing epsilon value.')
     parser.add_argument('--num-classes', type=int, default=1000, help='Number of classes.')
 
     # CLR
-    parser.add_argument('--min-lr', type=float, default=1e-5, help='Minimal LR for CLR.')
-    parser.add_argument('--max-lr', type=float, default=0.2, help='Maximal LR for CLR for batch of 128 '
-                                                                  '(scaled for bigger/smaller batches).')
-    parser.add_argument('--epochs-per-step', type=int, default=25,
+    parser.add_argument('--min-lr', type=float, default=2.5e-6, help='Minimal LR for CLR.')
+    parser.add_argument('--max-lr', type=float, default=0.225, help='Maximal LR for CLR for batch of 128 '
+                                                                    '(scaled for bigger/smaller batches).')
+    parser.add_argument('--epochs-per-step', type=int, default=75,
                         help='Number of epochs per step in CLR, recommended to be between 2 and 10.')
     parser.add_argument('--mode', default='triangular2', help='CLR mode. One of {triangular, triangular2, exp_range}')
     parser.add_argument('--find-clr', dest='find_clr', action='store_true',
@@ -95,7 +96,7 @@ def get_args():
 
     # Architecture
     parser.add_argument('--scaling', type=float, default=1, metavar='SC', help='Scaling of MobileNetV3 (default x1).')
-    parser.add_argument('--dp', type=float, default=0.1, metavar='DP', help='Dropping probability of DropBlock')
+    parser.add_argument('--dp', type=float, default=0.05, metavar='DP', help='Dropping probability of DropBlock')
     parser.add_argument('--input-size', type=int, default=224, metavar='I', help='Input size of MobileNetV3.')
     parser.add_argument('--small', dest='small', action='store_true', help='use small modification')
     parser.add_argument('--sync-bn', dest='sync_bn', action='store_true', help='use synchronized BN')
@@ -153,6 +154,7 @@ def get_args():
     # Adjust lr for batch size
     args.learning_rate *= args.batch_size / 128. * args.world_size
     args.max_lr *= args.batch_size / 128. * args.world_size
+    args.decay *= args.batch_size / 128. * args.world_size
 
     if not args.child:
         print("Random Seed: ", args.seed)
@@ -168,6 +170,11 @@ def is_bn(module):
 
 
 def main():
+    import warnings
+
+    # filter out corrupted images warnings
+    warnings.filterwarnings("ignore", "(Possibly )?corrupt EXIF data", UserWarning)
+
     args = get_args()
     device, dtype = args.device, args.dtype
 
@@ -185,6 +192,7 @@ def main():
         print(model)
         print('number of parameters: {}'.format(num_parameters))
         print('FLOPs: {}'.format(flops))
+        print('Resuts saved to {}'.format(args.save_path))
 
     # define loss function (criterion) and optimizer
     criterion = CrossEntropyLoss()

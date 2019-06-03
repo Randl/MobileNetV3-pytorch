@@ -90,7 +90,6 @@ class LinearBottleneck(nn.Module):
         self.db1 = DropBlockScheduled(DropBlock2D(drop_prob=drop_prob, block_size=7), start_value=0.,
                                       stop_value=drop_prob, nr_steps=num_steps, start_step=start_step)
         self.act1 = activation(**act_params)  # first does have act according to MobileNetV2
-        # TODO: compare
 
         self.conv2 = nn.Conv2d(expplanes, expplanes, kernel_size=k, stride=stride, padding=k // 2, bias=False,
                                groups=expplanes)
@@ -105,6 +104,7 @@ class LinearBottleneck(nn.Module):
         self.bn3 = nn.BatchNorm2d(outplanes)
         self.db3 = DropBlockScheduled(DropBlock2D(drop_prob=drop_prob, block_size=7), start_value=0.,
                                       stop_value=drop_prob, nr_steps=num_steps, start_step=start_step)
+        # self.act3 = activation(**act_params)  # works worse
 
         self.stride = stride
         self.expplanes = expplanes
@@ -129,6 +129,7 @@ class LinearBottleneck(nn.Module):
         out = self.conv3(out)
         out = self.bn3(out)
         out = self.db3(out)
+        # out = self.act3(out)
 
         if self.stride == 1 and self.inplanes == self.outplanes:  # TODO: or add 1x1?
             out += residual  # No inplace if there is in-place activation before

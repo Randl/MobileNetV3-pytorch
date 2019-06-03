@@ -157,7 +157,7 @@ class DropBlockScheduled(nn.Module):
         return self.dropblock(x)
 
     def step(self):
-        idx = self.i.item()
+        idx = self.i.item()  # TODO (drop on restart)
         if idx > self.start_step and idx < self.start_step + self.nr_steps:
             self.dropblock.drop_prob += self.step_size
 
