@@ -29,7 +29,7 @@ class DropBlock2D(nn.Module):
     def __init__(self, drop_prob, block_size):
         super(DropBlock2D, self).__init__()
 
-        self.drop_prob = drop_prob
+        self.register_buffer('drop_prob', drop_prob * torch.ones(1, dtype=torch.float32))
         self.block_size = block_size
 
     def forward(self, x):
@@ -72,7 +72,7 @@ class DropBlock2D(nn.Module):
         return block_mask, keeped
 
     def _compute_gamma(self, x):
-        return self.drop_prob / (self.block_size ** 2)
+        return self.drop_prob.item() / (self.block_size ** 2)
 
 
 class DropBlock3D(DropBlock2D):
@@ -144,8 +144,10 @@ class DropBlock3D(DropBlock2D):
 
 class DropBlockScheduled(nn.Module):
     def __init__(self, dropblock, start_value, stop_value, nr_steps, start_step=0):
+        # TODO: what happend is tarting from 0.05 and going towards 0.10 and then restarting from 0.05 altogether
         super(DropBlockScheduled, self).__init__()
         self.dropblock = dropblock
+        self.dropblock.drop_prob[0] = start_value
         self.register_buffer('i', torch.zeros(1, dtype=torch.int64))
         self.start_step = start_step
         self.nr_steps = nr_steps
@@ -157,7 +159,7 @@ class DropBlockScheduled(nn.Module):
         return self.dropblock(x)
 
     def step(self):
-        idx = self.i.item()  # TODO (drop on restart)
+        idx = self.i.item()
         if idx > self.start_step and idx < self.start_step + self.nr_steps:
             self.dropblock.drop_prob += self.step_size
 

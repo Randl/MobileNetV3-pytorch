@@ -99,6 +99,20 @@ def save_checkpoint(state, is_best, filepath='./', filename='checkpoint{}.pth.ta
         shutil.copyfile(save_path, best_path)
 
 
+def swa_clr(folder, device):
+    checkpoints = []
+    for file in os.listdir(folder):
+        if not 'SW' in file:
+            continue
+        fname = os.path.join(folder, file)
+        checkpoints.append(torch.load(fname, map_location=device))
+    sd = checkpoints[0]['state_dict'].copy()
+    for i, cp in enumerate(checkpoints):
+        for w in cp['state_dict']:
+            sd[w] = i / (i + 1.) * sd[w] + 1. / (i + 1.) * cp['state_dict'][w]
+    return sd
+
+
 def find_bounds_clr(model, loader, optimizer, criterion, device, dtype, min_lr=8e-6, max_lr=8e-5, step_size=2000,
                     mode='triangular', save_path='.'):
     model.train()

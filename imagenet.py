@@ -20,7 +20,7 @@ from MobileNetV3 import MobileNetV3
 from cosine_with_warmup import CosineLR
 from data import get_loaders
 from mixup import MixupScheduled
-from run import train, test, save_checkpoint, find_bounds_clr
+from run import train, test, save_checkpoint, find_bounds_clr, swa_clr
 from utils.cross_entropy import CrossEntropyLoss
 from utils.logger import CsvLogger
 from utils.optimizer_wrapper import OptimizerWrapper
@@ -34,6 +34,8 @@ claimed_acc_top1 = {
     'small': {256: {1.: 0.685}, 224: {0.35: 0.498, 0.5: 0.58, 0.75: 0.654, 1.: 0.675, 1.25: 0.704}, 192: {1.: 0.654},
               160: {1.: 0.628}, 128: {1.: 0.573}, 96: {1.: 0.517}}}
 
+
+# TODO add hubconf.py https://pytorch.org/blog/towards-reproducible-research-with-pytorch-hub/
 
 def get_args():
     parser = argparse.ArgumentParser(description='MobileNetV3 training with PyTorch')
@@ -53,12 +55,12 @@ def get_args():
 
     # Optimization options
     parser.add_argument('--sched', dest='sched', type=str, default='multistep')
-    parser.add_argument('--epochs', type=int, default=155, help='Number of epochs to train.')
+    parser.add_argument('--epochs', type=int, default=755, help='Number of epochs to train.')
     parser.add_argument('-b', '--batch-size', default=128, type=int, metavar='N', help='mini-batch size (default: 128)')
     parser.add_argument('--learning_rate', '-lr', type=float, default=0.02, help='The learning rate for batch of 128 '
                                                                                  '(scaled for bigger/smaller batches).')
     parser.add_argument('--momentum', '-m', type=float, default=0.9, help='Momentum.')
-    parser.add_argument('--decay', '-d', type=float, default=5e-7, help='Weight decay for batch of 128 '
+    parser.add_argument('--decay', '-d', type=float, default=2.5e-7, help='Weight decay for batch of 128 '
                                                                         '(scaled for bigger/smaller batches).')
     parser.add_argument('--gamma', type=float, default=0.1, help='LR is multiplied by gamma at scheduled epochs.')
     parser.add_argument('--schedule', type=int, nargs='+', default=[200, 300],
@@ -66,7 +68,7 @@ def get_args():
     parser.add_argument('--step', type=int, default=40, help='Decrease learning rate each time.')
     parser.add_argument('--warmup', default=0, type=int, metavar='N', help='Warmup length')
     parser.add_argument('--mixup', type=float, default=0.2, help='Mixup gamma value.')
-    parser.add_argument('--mixup-warmup', type=int, default=155, help='Mixup time to be turned of in the beginning.')
+    parser.add_argument('--mixup-warmup', type=int, default=455, help='Mixup time to be turned of in the beginning.')
     parser.add_argument('--smooth-eps', type=float, default=0.1, help='Label smoothing epsilon value.')
     parser.add_argument('--num-classes', type=int, default=1000, help='Number of classes.')
 
@@ -74,7 +76,7 @@ def get_args():
     parser.add_argument('--min-lr', type=float, default=2.5e-6, help='Minimal LR for CLR.')
     parser.add_argument('--max-lr', type=float, default=0.225, help='Maximal LR for CLR for batch of 128 '
                                                                     '(scaled for bigger/smaller batches).')
-    parser.add_argument('--epochs-per-step', type=int, default=75,
+    parser.add_argument('--epochs-per-step', type=int, default=125,
                         help='Number of epochs per step in CLR, recommended to be between 2 and 10.')
     parser.add_argument('--mode', default='triangular2', help='CLR mode. One of {triangular, triangular2, exp_range}')
     parser.add_argument('--find-clr', dest='find_clr', action='store_true',
@@ -86,6 +88,8 @@ def get_args():
     parser.add_argument('--results_dir', metavar='RESULTS_DIR', default='./results', help='Directory to store results')
     parser.add_argument('--resume', default='', type=str, metavar='PATH',
                         help='path to latest checkpoint (default: none)')
+    parser.add_argument('--swa', default='', type=str, metavar='PATH',
+                        help='path to SWA folder (default: none)')
     parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                         help='manual epoch number (useful on restarts)')
     parser.add_argument('--log-interval', type=int, default=100, metavar='N',
@@ -96,7 +100,7 @@ def get_args():
 
     # Architecture
     parser.add_argument('--scaling', type=float, default=1, metavar='SC', help='Scaling of MobileNetV3 (default x1).')
-    parser.add_argument('--dp', type=float, default=0.05, metavar='DP', help='Dropping probability of DropBlock')
+    parser.add_argument('--dp', type=float, default=0.1, metavar='DP', help='Dropping probability of DropBlock')
     parser.add_argument('--input-size', type=int, default=224, metavar='I', help='Input size of MobileNetV3.')
     parser.add_argument('--small', dest='small', action='store_true', help='use small modification')
     parser.add_argument('--sync-bn', dest='sync_bn', action='store_true', help='use synchronized BN')
@@ -259,6 +263,9 @@ def main():
         optim, mixup = init_optimizer_and_mixup(args, train_loader, model)
 
     if args.evaluate:
+        if args.swa:
+            sd = swa_clr(args.swa, device)
+            model.load_state_dict(sd)
         loss, top1, top5 = test(model, val_loader, criterion, device, dtype, args.child)  # TODO
         return
 

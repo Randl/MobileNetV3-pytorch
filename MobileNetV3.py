@@ -3,6 +3,7 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.hub import load_state_dict_from_url
 
 from dropblock import DropBlockScheduled, DropBlock2D
 
@@ -87,7 +88,7 @@ class LinearBottleneck(nn.Module):
         super(LinearBottleneck, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, expplanes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(expplanes)
-        self.db1 = DropBlockScheduled(DropBlock2D(drop_prob=drop_prob, block_size=7), start_value=0.,
+        self.db1 = DropBlockScheduled(DropBlock2D(drop_prob=0, block_size=7), start_value=0.,
                                       stop_value=drop_prob, nr_steps=num_steps, start_step=start_step)
         self.act1 = activation(**act_params)  # first does have act according to MobileNetV2
 
@@ -244,7 +245,7 @@ class MobileNetV3(nn.Module):
             [80, 480, 112, 1, 3, drop_prob, True, HardSwish],  # -> 14x14
             [112, 672, 112, 1, 3, drop_prob, True, HardSwish],  # -> 14x14
             [112, 672, 160, 2, 5, drop_prob, True, HardSwish],  # -> 7x7
-            [160, 672, 160, 1, 5, drop_prob, True, HardSwish],  # -> 7x7
+            [160, 960, 160, 1, 5, drop_prob, True, HardSwish],  # -> 7x7
             [160, 960, 160, 1, 5, drop_prob, True, HardSwish],  # -> 7x7
         ]
         self.bottlenecks_setting_small = [
@@ -308,6 +309,25 @@ class MobileNetV3(nn.Module):
         x = self.last_block(x)
         return x
 
+
+# TODO
+model_urls = {
+    'mobilenetv3_large_1.0_224': 'https://github.com/Randl/MobileNetV3-pytorch/blob/master/results/mobilenetv3large-v1/model_best0-ec869f9b.pth',
+}
+
+
+def mobilenetv3(input_size=224, num_classes=1000, scale=1., in_channels=3, drop_prob=0.0, num_steps=3e5, start_step=0,
+                small=False, get_weights=True, progress=True):
+    model = MobileNetV3(num_classes=num_classes, scale=scale, in_channels=in_channels, drop_prob=drop_prob,
+                        num_steps=num_steps, start_step=start_step, small=small)
+    name = 'mobilenetv3_{}_{}_{}'.format('small' if small else 'large', scale, input_size)
+    if get_weights:
+        if name in model_urls:
+            state_dict = load_state_dict_from_url(model_urls[name], progress=progress, map_location='cpu')
+            model.load_state_dict(state_dict)
+        else:
+            raise ValueError
+    return model
 
 if __name__ == "__main__":
     """Testing

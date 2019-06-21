@@ -12,6 +12,7 @@ plt.switch_backend('agg')
 
 
 # TODO: add/replace with tensorboard https://pytorch.org/docs/stable/tensorboard.html
+# TODO: log gradient magnitudes, weight magnitude, lr and stuff
 class CsvLogger:
     def __init__(self, filepath='./', filename='results{}.csv', data=None, local_rank=0):
         self.local_rank = local_rank
